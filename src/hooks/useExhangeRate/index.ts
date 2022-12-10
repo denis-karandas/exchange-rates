@@ -1,15 +1,12 @@
 import React from 'react';
 import TimeService from 'services/Time';
-import { IExchangeRateResponse, ILocalStorageExchangeRate, IUseExchangeRateResponse } from './models';
-import { getParsedJsonFromLocalStorage, setConvertedJsonInLocalStorage } from './helpers';
+import LocalStorageService from 'services/LocalStorage';
+import { useFetch } from 'hooks/useFetch';
 import { apiUrl, localStorageKey, reFetchHourInterval } from './config';
+import { IExchangeRateResponse, ILocalStorageExchangeRate, IUseExchangeRateResponse } from './models';
 
 export const useExchangeRate = (): IUseExchangeRateResponse => {
-    const exchangeRateFromLocalStorage = getParsedJsonFromLocalStorage<ILocalStorageExchangeRate>(localStorageKey);
-
-    const [data, setData] = React.useState<IExchangeRateResponse[] | null>(exchangeRateFromLocalStorage?.data);
-    const [error, setError] = React.useState<any>(null);
-    const [isFetching, setIsFetching] = React.useState<boolean>(false);
+    const exchangeRateFromLocalStorage = LocalStorageService.get<ILocalStorageExchangeRate>(localStorageKey);
 
     const timeoutRef = React.useRef<any>(null);
     const localStorageTimestampRef = React.useRef<any>(exchangeRateFromLocalStorage?.timestamp);
@@ -20,44 +17,43 @@ export const useExchangeRate = (): IUseExchangeRateResponse => {
         }
     }, []);
 
-    const startTimer = React.useCallback((callback: () => void, nextReFetchTimestamp: number) => {
+    const setIntervalAction = React.useCallback((callback: () => void, nextReFetchTimestamp: number) => {
         clearTimeoutFunc();
 
         timeoutRef.current = setTimeout(callback, nextReFetchTimestamp - Date.now());
     }, [clearTimeoutFunc]);
 
-    const saveExchangeRateInLocalStorage = (timestamp: number, values: IExchangeRateResponse[]) => {
-        setConvertedJsonInLocalStorage(localStorageKey, { timestamp, data: values });
-    };
+    const {
+        data,
+        error,
+        isFetching,
+        makeRequest
+    } = useFetch<IExchangeRateResponse[]>({
+        url: apiUrl,
+        initialData: exchangeRateFromLocalStorage?.data || null
+    });
 
     const fetchExchangeRate = React.useCallback(() => {
-        setData(null);
-        setError(null);
-        setIsFetching(true);
+        const nextReFetchTimeInMilliseconds = Date.now() + TimeService.convertHoursToMilliseconds(reFetchHourInterval);
 
-        fetch(apiUrl)
-            .then((response: Response) => response.json())
-            .then((exchangeRate: IExchangeRateResponse[]) => {
-                const nextReFetchTimeInMilliseconds = Date.now() + TimeService.convertHoursToMilliseconds(reFetchHourInterval);
-
-                saveExchangeRateInLocalStorage(nextReFetchTimeInMilliseconds, exchangeRate);
-                setData(exchangeRate);
-
-                startTimer(fetchExchangeRate, nextReFetchTimeInMilliseconds);
-            })
-            .catch((error) => {
-                setError(error);
-            })
-            .finally(() => {
-                setIsFetching(false);
-            });
-    }, [setData, setError, setIsFetching, startTimer]);
+        makeRequest({
+            onSuccess: (exchangeRate: IExchangeRateResponse[]) => {
+                LocalStorageService.set<ILocalStorageExchangeRate>(localStorageKey, {
+                    timestamp: nextReFetchTimeInMilliseconds,
+                    data: exchangeRate,
+                });
+            },
+            onFinally: () => {
+                setIntervalAction(fetchExchangeRate, nextReFetchTimeInMilliseconds);
+            },
+        });
+    }, [makeRequest, setIntervalAction]);
 
     React.useEffect(() => {
         if (localStorageTimestampRef.current) {
-            startTimer(fetchExchangeRate, localStorageTimestampRef.current);
+            setIntervalAction(fetchExchangeRate, localStorageTimestampRef.current);
         }
-    }, [fetchExchangeRate, startTimer]);
+    }, [fetchExchangeRate, setIntervalAction]);
 
     return { data, error, isFetching, fetchExchangeRate };
 };

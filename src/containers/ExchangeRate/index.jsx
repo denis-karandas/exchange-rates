@@ -9,13 +9,15 @@ import { tableHeaders } from './config';
 import './exchangeRates.sass';
 
 const ExchangeRates = () => {
-    const { data, isFetching, fetchExchangeRate } = useExchangeRate();
+    const { data, error, isFetching, fetchExchangeRate } = useExchangeRate();
 
     React.useEffect( () => {
-        if (!data) {
+        const isFirstRenderWithoutLocalStorageData = !data && !error && !isFetching;
+
+        if (isFirstRenderWithoutLocalStorageData) {
             fetchExchangeRate();
         }
-    }, []);
+    }, [data, error, isFetching, fetchExchangeRate]);
 
     const tableData = React.useMemo(() => {
         return data?.map(apiExchangeRateToTableItem) || [];

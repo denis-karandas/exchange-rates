@@ -2,7 +2,6 @@ export interface IUseExchangeRateResponse {
     data: IExchangeRateResponse[] | null;
     error: any;
     isFetching: boolean;
-
     fetchExchangeRate: () => void;
 }
 
