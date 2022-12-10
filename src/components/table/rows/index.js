@@ -1,1 +1,1 @@
-export { default as ExchangeRateRow } from './ExchangeRateRow';
+export { default as ExchangeRatesRow } from './ExchangeRatesRow';

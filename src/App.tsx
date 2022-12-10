@@ -1,10 +1,10 @@
 import React from 'react';
-import ExchangeRate from './containers/ExchangeRate';
+import ExchangeRates from './containers/ExchangeRates';
 
 function App() {
   return (
     <div className="App">
-      <ExchangeRate />
+      <ExchangeRates />
     </div>
   );
 }

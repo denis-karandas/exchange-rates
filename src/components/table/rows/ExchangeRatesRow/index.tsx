@@ -1,7 +1,7 @@
 import React from 'react';
-import { IExchangeRateRow } from './models';
+import { IExchangeRatesRow } from './models';
 
-const ExchangeRateRow = ({ data }: IExchangeRateRow) => {
+const ExchangeRatesRow = ({ data }: IExchangeRatesRow) => {
     const [name, setName] = React.useState<string>(data.name);
     const [rate, setRate] = React.useState<string>(data.rate);
 
@@ -17,4 +17,4 @@ const ExchangeRateRow = ({ data }: IExchangeRateRow) => {
     );
 };
 
-export default ExchangeRateRow;
+export default ExchangeRatesRow;

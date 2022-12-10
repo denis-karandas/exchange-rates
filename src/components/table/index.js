@@ -1,1 +1,1 @@
-export { ExchangeRateRow }  from './rows';
+export { ExchangeRatesRow }  from './rows';

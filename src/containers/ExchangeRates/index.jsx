@@ -1,26 +1,26 @@
 import React from 'react';
 import { Table } from 'components/common';
-import { ExchangeRateRow } from 'components/table';
-import { IExchangeRateRowData } from 'components/table/rows/ExchangeRateRow/models';
-import { useExchangeRate } from 'hooks/useExhangeRate';
-import { apiExchangeRateToTableItem } from './adapters';
+import { ExchangeRatesRow } from 'components/table';
+import { IExchangeRatesRowData } from 'components/table/rows/ExchangeRatesRow/models';
+import { useExchangeRates } from 'hooks/useExchangeRates';
+import { apiExchangeRatesItemToTableItem } from './adapters';
 import { tableHeaders } from './config';
 
 import './exchangeRates.sass';
 
 const ExchangeRates = () => {
-    const { data, error, isFetching, fetchExchangeRate } = useExchangeRate();
+    const { data, error, isFetching, fetchExchangeRates } = useExchangeRates();
 
     React.useEffect( () => {
         const isFirstRenderWithoutLocalStorageData = !data && !error && !isFetching;
 
         if (isFirstRenderWithoutLocalStorageData) {
-            fetchExchangeRate();
+            fetchExchangeRates();
         }
-    }, [data, error, isFetching, fetchExchangeRate]);
+    }, [data, error, isFetching, fetchExchangeRates]);
 
     const tableData = React.useMemo(() => {
-        return data?.map(apiExchangeRateToTableItem) || [];
+        return data?.map(apiExchangeRatesItemToTableItem) || [];
     }, [data]);
 
     const renderLoader = () => (
@@ -32,14 +32,14 @@ const ExchangeRates = () => {
             <Table
                 headers={tableHeaders}
                 data={tableData}
-                renderRow={(row: IExchangeRateRowData) => <ExchangeRateRow key={row.name} data={row} />}
+                renderRow={(row: IExchangeRatesRowData) => <ExchangeRatesRow key={row.name} data={row} />}
             />
-            <button onClick={fetchExchangeRate}>Re-fetch</button>
+            <button onClick={fetchExchangeRates}>Re-fetch</button>
         </>
     );
 
     return (
-        <div className="exchangeRate">
+        <div className="exchangeRates">
             {isFetching ? renderLoader() : renderContent()}
         </div>
     );
