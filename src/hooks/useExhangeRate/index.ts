@@ -17,10 +17,10 @@ export const useExchangeRate = (): IUseExchangeRateResponse => {
         }
     }, []);
 
-    const setIntervalAction = React.useCallback((callback: () => void, nextReFetchTimestamp: number) => {
+    const setDelayedCallback = React.useCallback((callback: () => void, nextReFetchTimeInMilliseconds: number) => {
         clearTimeoutFunc();
 
-        timeoutRef.current = setTimeout(callback, nextReFetchTimestamp - Date.now());
+        timeoutRef.current = setTimeout(callback, nextReFetchTimeInMilliseconds - Date.now());
     }, [clearTimeoutFunc]);
 
     const {
@@ -44,16 +44,16 @@ export const useExchangeRate = (): IUseExchangeRateResponse => {
                 });
             },
             onFinally: () => {
-                setIntervalAction(fetchExchangeRate, nextReFetchTimeInMilliseconds);
+                setDelayedCallback(fetchExchangeRate, nextReFetchTimeInMilliseconds);
             },
         });
-    }, [makeRequest, setIntervalAction]);
+    }, [makeRequest, setDelayedCallback]);
 
     React.useEffect(() => {
         if (localStorageTimestampRef.current) {
-            setIntervalAction(fetchExchangeRate, localStorageTimestampRef.current);
+            setDelayedCallback(fetchExchangeRate, localStorageTimestampRef.current);
         }
-    }, [fetchExchangeRate, setIntervalAction]);
+    }, [fetchExchangeRate, setDelayedCallback]);
 
     return { data, error, isFetching, fetchExchangeRate };
 };

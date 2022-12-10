@@ -39,7 +39,7 @@ const ExchangeRates = () => {
     );
 
     return (
-        <div className="exchangeRates">
+        <div className="exchangeRate">
             {isFetching ? renderLoader() : renderContent()}
         </div>
     );

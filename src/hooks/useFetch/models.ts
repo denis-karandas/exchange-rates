@@ -12,7 +12,6 @@ export interface IUseFetchParams<T> {
 export interface IMakeRequestParams<T> {
     onSuccess?: (data: T) => void;
     onError?: (error: Error) => void;
-
     onFinally?: () => void;
 }
 
