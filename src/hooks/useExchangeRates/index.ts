@@ -22,6 +22,7 @@ export const useExchangeRates = (): IUseExchangeRatesResponse => {
 
         intervalRef.current = setInterval(() => {
             if (localStorageMillisecondsLeftToReFetchRef.current <= 0) {
+                clearIntervalFunc();
                 callback();
             }
             else {
