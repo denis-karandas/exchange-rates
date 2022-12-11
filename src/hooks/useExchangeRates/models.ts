@@ -14,6 +14,6 @@ export interface IExchangeRatesResponse {
 }
 
 export interface ILocalStorageExchangeRates {
-    timestamp: number;
-    data: IExchangeRatesResponse[];
+    millisecondsLeftToReFetch: number;
+    data?: IExchangeRatesResponse[] | null;
 }

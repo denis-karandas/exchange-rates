@@ -8,20 +8,27 @@ import { IExchangeRatesResponse, ILocalStorageExchangeRates, IUseExchangeRatesRe
 export const useExchangeRates = (): IUseExchangeRatesResponse => {
     const exchangeRatesFromLocalStorage = LocalStorageService.get<ILocalStorageExchangeRates>(localStorageKey);
 
-    const timeoutRef = React.useRef<any>(null);
-    const localStorageTimestampRef = React.useRef<any>(exchangeRatesFromLocalStorage?.timestamp);
+    const intervalRef = React.useRef<any>(null);
+    const localStorageMillisecondsLeftToReFetchRef = React.useRef<any>(exchangeRatesFromLocalStorage?.millisecondsLeftToReFetch);
 
-    const clearTimeoutFunc = React.useCallback(() => {
-        if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
+    const clearIntervalFunc = React.useCallback(() => {
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current);
         }
     }, []);
 
-    const setDelayedCallback = React.useCallback((callback: () => void, nextReFetchTimeInMilliseconds: number) => {
-        clearTimeoutFunc();
+    const setDelayedCallback = React.useCallback((callback: () => void) => {
+        clearIntervalFunc();
 
-        timeoutRef.current = setTimeout(callback, nextReFetchTimeInMilliseconds - Date.now());
-    }, [clearTimeoutFunc]);
+        intervalRef.current = setInterval(() => {
+            if (localStorageMillisecondsLeftToReFetchRef.current <= 0) {
+                callback();
+            }
+            else {
+                localStorageMillisecondsLeftToReFetchRef.current -= 1000;
+            }
+        }, 1000);
+    }, [clearIntervalFunc]);
 
     const {
         data,
@@ -34,24 +41,42 @@ export const useExchangeRates = (): IUseExchangeRatesResponse => {
     });
 
     const fetchExchangeRates = React.useCallback(() => {
-        const nextReFetchTimeInMilliseconds = Date.now() + TimeService.convertHoursToMilliseconds(reFetchHourInterval);
+        const millisecondsLeftToReFetch = TimeService.convertHoursToMilliseconds(reFetchHourInterval);
 
         makeRequest({
             onSuccess: (exchangeRates: IExchangeRatesResponse[]) => {
                 LocalStorageService.set<ILocalStorageExchangeRates>(localStorageKey, {
-                    timestamp: nextReFetchTimeInMilliseconds,
+                    millisecondsLeftToReFetch,
                     data: exchangeRates,
                 });
             },
             onFinally: () => {
-                setDelayedCallback(fetchExchangeRates, nextReFetchTimeInMilliseconds);
+                localStorageMillisecondsLeftToReFetchRef.current = millisecondsLeftToReFetch;
+                setDelayedCallback(fetchExchangeRates);
             },
         });
     }, [makeRequest, setDelayedCallback]);
 
+    const beforeunloadEvent = React.useCallback(() => {
+        const exchangeRatesFromLocalStorageBeforeUnload = LocalStorageService.get<ILocalStorageExchangeRates>(localStorageKey);
+        
+        LocalStorageService.set<ILocalStorageExchangeRates>(localStorageKey, {
+            millisecondsLeftToReFetch: localStorageMillisecondsLeftToReFetchRef.current,
+            data: exchangeRatesFromLocalStorageBeforeUnload?.data || null,
+        });
+    }, []);
+
     React.useEffect(() => {
-        if (localStorageTimestampRef.current) {
-            setDelayedCallback(fetchExchangeRates, localStorageTimestampRef.current);
+        window.addEventListener('beforeunload', beforeunloadEvent);
+
+        return () => {
+            window.removeEventListener('beforeunload', beforeunloadEvent);
+        };
+    }, [beforeunloadEvent]);
+
+    React.useEffect(() => {
+        if (localStorageMillisecondsLeftToReFetchRef.current !== undefined) {
+            setDelayedCallback(fetchExchangeRates);
         }
     }, [fetchExchangeRates, setDelayedCallback]);
 
